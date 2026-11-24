@@ -1,4 +1,5 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Activity, BarChart3, BookOpen, GraduationCap, Target, TrendingUp } from 'lucide-react';
 import { useApiQuery } from '@/hooks/useApi';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -51,9 +52,16 @@ function Sparkline({ data, color = 'bg-brand-500/80' }: { data: { label: string;
 export default function AdminAnalyticsPage() {
   useDocumentTitle('Analytics');
   const [days, setDays] = useState(30);
-  const params = new URLSearchParams(window.location.search);
-  const initialExamId = params.get('examId') ?? '';
-  const [examId, setExamId] = useState(initialExamId);
+  // `?examId=` is a deep link from the exam list / builder. React Router does
+  // not remount on a search-only change, so track it with useSearchParams
+  // instead of reading window.location once.
+  const [searchParams] = useSearchParams();
+  const linkedExamId = searchParams.get('examId') ?? '';
+  const [examId, setExamId] = useState(linkedExamId);
+
+  useEffect(() => {
+    if (linkedExamId) setExamId(linkedExamId);
+  }, [linkedExamId]);
 
   const overview = useApiQuery<Overview>('/api/admin/analytics/overview', { days }, { deps: [days] });
   const exams = useApiQuery<Paginated<{ id: string; title: string; attemptCount: number }>>('/api/admin/exams', { pageSize: 100 });

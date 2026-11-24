@@ -11,6 +11,8 @@ type CompiledRoute = {
   pattern: string;
   regex: RegExp;
   paramNames: string[];
+  /** Higher wins over a less specific route (see `match`). */
+  specificity: number;
   handler: Handler;
   /** Route is matched even if it ends with a wildcard (e.g. /api/assets/*). */
   tag?: string;
@@ -41,12 +43,28 @@ function compile(path: string): { regex: RegExp; paramNames: string[] } {
   return { regex: new RegExp(`^${pattern || '/'}/?$`, 'i'), paramNames };
 }
 
+/**
+ * Static segments outrank parameters, and parameters outrank wildcards, so
+ * `/api/admin/students/export` wins over `/api/admin/students/:id` regardless
+ * of the order the routes were registered in.
+ */
+function specificityOf(path: string): number {
+  let score = 0;
+  for (const segment of path.split('/')) {
+    if (!segment) continue;
+    if (segment === '*') score += 1;
+    else if (segment.startsWith(':')) score += 10;
+    else score += 100;
+  }
+  return score;
+}
+
 export class Router {
   private routes: CompiledRoute[] = [];
 
   add(spec: RouteSpec): this {
     const { regex, paramNames } = compile(spec.path);
-    this.routes.push({ ...spec, pattern: spec.path, regex, paramNames });
+    this.routes.push({ ...spec, pattern: spec.path, regex, paramNames, specificity: specificityOf(spec.path) });
     return this;
   }
 
@@ -70,6 +88,8 @@ export class Router {
     | { handler: Handler; params: Record<string, string>; tag?: string; allowed: Method[] }
     | { handler: null; allowed: Method[] } {
     const allowed: Method[] = [];
+    let best: { route: CompiledRoute; match: RegExpExecArray } | null = null;
+
     for (const route of this.routes) {
       const m = route.regex.exec(pathname);
       if (!m) continue;
@@ -77,14 +97,18 @@ export class Router {
         allowed.push(route.method);
         continue;
       }
-      const params: Record<string, string> = {};
-      route.paramNames.forEach((name, index) => {
-        const raw = m[index + 1];
-        if (raw !== undefined) params[name] = decodeURIComponent(raw);
-      });
-      return { handler: route.handler, params, tag: route.tag, allowed };
+      // Keep the most specific match rather than the first registered one.
+      if (!best || route.specificity > best.route.specificity) best = { route, match: m };
     }
-    return { handler: null, allowed: Array.from(new Set(allowed)) };
+
+    if (!best) return { handler: null, allowed: Array.from(new Set(allowed)) };
+
+    const params: Record<string, string> = {};
+    best.route.paramNames.forEach((name, index) => {
+      const raw = best.match[index + 1];
+      if (raw !== undefined) params[name] = decodeURIComponent(raw);
+    });
+    return { handler: best.route.handler, params, tag: best.route.tag, allowed };
   }
 
   /** Route inventory for the self-documenting API docs endpoint. */

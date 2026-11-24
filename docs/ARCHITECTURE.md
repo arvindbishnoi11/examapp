@@ -42,6 +42,14 @@ every uptime monitor reports a false “OK”. This is asserted by the smoke tes
 | `src/pages/*` | Screens | Compute authoritative results |
 | `src/lib/api.ts` | Fetch wrapper, retries, error mapping, blob downloads | Store tokens |
 
+### Route precedence
+
+`Router.match` picks the **most specific** match, not the first registered one: literal segments (100) beat
+parameters (10), which beat wildcards (1). So `/api/admin/students/export` always wins over
+`/api/admin/students/:id` no matter which module registered first — order-independent, and the smoke test
+asserts both that case and `/students/filters`. A path that matches several methods still returns `405` with an
+`Allow` header; an unmatched `/api/*` path returns `404` with `x-suggested-routes`.
+
 Validation is centralised in `Validator` (typed, coercing, field-level errors surfaced as
 `error.details[]`). Handlers call `v.throwIfInvalid()` before any write, so a bad payload never reaches D1.
 

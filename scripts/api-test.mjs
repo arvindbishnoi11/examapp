@@ -520,6 +520,16 @@ async function main() {
   const activeStudents = await get('/api/admin/analytics/students/active?days=7', { token: adminToken });
   eq(activeStudents.status, 200, 'GET /api/admin/analytics/students/active');
 
+  // Route-shadowing regressions: these static paths sit next to
+  // `/api/admin/students/:id`, so the router must prefer the literal segment.
+  const studentFilters = await get('/api/admin/students/filters', { token: adminToken });
+  eq(studentFilters.status, 200, 'GET /api/admin/students/filters is not shadowed by /:id');
+  check(Array.isArray(studentFilters.data?.classes), 'student filters include classes');
+
+  const studentsCsv = await get('/api/admin/students/export', { token: adminToken, raw: true });
+  eq(studentsCsv.status, 200, 'GET /api/admin/students/export is not shadowed by /:id');
+  check(typeof studentsCsv.data === 'string' && studentsCsv.data.includes('email'), 'students CSV has an email column');
+
   const results = await get('/api/admin/results?pageSize=10', { token: adminToken });
   eq(results.status, 200, 'GET /api/admin/results');
 

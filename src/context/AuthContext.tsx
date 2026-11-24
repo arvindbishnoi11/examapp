@@ -21,6 +21,7 @@ import {
 } from 'firebase/auth';
 import { getFirebaseAuth, firebaseAvailable } from '@/lib/firebase';
 import { api, ApiError, setTokenProvider, setUnauthorizedHandler } from '@/lib/api';
+import { unregisterFromPush } from '@/lib/messaging';
 import { appConfig } from '@/config';
 import type { SessionUser } from '@shared/types';
 
@@ -213,6 +214,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = useCallback(async () => {
     writeDevToken(null);
+    // Deactivate this device's push token first: on a shared device the next
+    // student must not receive the previous student's exam reminders. This
+    // needs the still-valid session, so it runs before the logout calls.
+    await unregisterFromPush().catch(() => undefined);
     const auth = getFirebaseAuth();
     if (auth?.currentUser) {
       await api.post('/api/auth/logout').catch(() => undefined);

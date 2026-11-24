@@ -159,6 +159,27 @@ npx wrangler tail --format pretty
 
 ---
 
+## 6b. Web push (optional)
+
+Push needs **three** things, and each fails independently:
+
+| Piece | Where | Effect if missing |
+| --- | --- | --- |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | Worker secret | The Worker cannot sign FCM v1 requests; sends fail with a provider error |
+| `VITE_FIREBASE_VAPID_KEY` | `.env` → `public/env.js` at build time | The browser cannot obtain a device token; the profile toggle explains this |
+| `firebase-messaging-sw.js` | Served from the site root | Background messages never display |
+
+Get the key from **Firebase console → Project settings → Cloud Messaging → Web Push certificates → Key pair**,
+put it in `.env` as `VITE_FIREBASE_VAPID_KEY`, then rebuild (`npm run build`) — it is baked into
+`public/env.js` by `scripts/build-config.mjs`. The same project must back both halves; a token minted for
+`rankup29` is useless to a Worker authenticating as another project.
+
+Students enable push themselves from **Profile → Notifications → Push notifications**; the toggle requests
+permission inside the click, registers the token, and the sign-out path unregisters it so a shared device stops
+receiving the previous student's reminders. In-app notifications work with none of this configured.
+
+---
+
 ## 7. Rollback
 
 Workers keep version history:

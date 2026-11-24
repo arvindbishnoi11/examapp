@@ -134,6 +134,9 @@ try {
       ...(notification.image ? { image: notification.image } : {}),
       data: { deepLink: data.deepLink || '/' },
       tag: data.tag || undefined,
+      // The Worker sends high-urgency messages for exam alerts; re-alert for
+      // anything that is not explicitly low priority.
+      requireInteraction: data.importance === 'high',
     };
     self.registration.showNotification(title, options);
   });

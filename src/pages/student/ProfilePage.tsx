@@ -21,6 +21,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { useToast } from '@/context/ToastContext';
 import { api, errorMessage } from '@/lib/api';
+import { notificationPermission, pushSupport, registerForPush } from '@/lib/messaging';
 import { Button } from '@/components/ui/Button';
 import { Badge, ConfirmDialog, Alert, ErrorState, Modal, ProgressBar, Spinner, Tabs } from '@/components/ui';
 import { formatDateTime, initials } from '@/lib/format';
@@ -77,6 +78,42 @@ export default function ProfilePage({ initialTab = 'overview' }: { initialTab?: 
     if (user?.profile?.notificationPrefs) setPrefs(user.profile.notificationPrefs);
   }, [user?.profile?.notificationPrefs]);
 
+  /**
+   * "Push notifications" is the only preference that needs anything from the
+   * browser. Turning it on requests permission (this runs inside the click, so
+   * the gesture is preserved) and registers the device's FCM token; if the user
+   * blocks it, we store the preference as off rather than pretending otherwise.
+   */
+  const setPushEnabled = async (enabled: boolean) => {
+    if (!enabled) {
+      void savePrefs({ ...prefs, push: false });
+      return;
+    }
+
+    const support = pushSupport();
+    if (support !== 'supported') {
+      const reason: Record<string, string> = {
+        'no-vapid-key': 'Push is not configured for this deployment (missing VAPID key).',
+        'firebase-unconfigured': 'Push is unavailable because Firebase is not configured.',
+        'unsupported-browser': 'This browser does not support web push.',
+        'no-service-worker': 'This browser does not support service workers.',
+      };
+      toast.error(reason[support] ?? 'Push is not available on this device.');
+      return;
+    }
+
+    const result = await registerForPush();
+    if (!result.ok) {
+      toast.error(
+        result.reason?.startsWith('permission')
+          ? 'Notifications are blocked. Allow them in your browser settings to receive exam reminders.'
+          : 'Could not enable push notifications on this device.',
+      );
+      return;
+    }
+    void savePrefs({ ...prefs, push: true });
+  };
+
   const savePrefs = async (next: typeof prefs) => {
     setPrefs(next);
     setSavingPrefs(true);
@@ -95,6 +132,20 @@ export default function ProfilePage({ initialTab = 'overview' }: { initialTab?: 
   }
 
   const displayName = user.profile?.fullName || user.displayName || user.email.split('@')[0];
+
+  // Reflect what the browser actually allows, so the checkbox never lies.
+  const pushCapability = pushSupport();
+  const permission = notificationPermission();
+  const pushHint =
+    pushCapability === 'no-vapid-key'
+      ? 'Not configured for this deployment yet.'
+      : pushCapability === 'unsupported-browser' || pushCapability === 'firebase-unconfigured'
+        ? 'This browser or deployment does not support web push.'
+        : permission === 'denied'
+          ? 'Blocked in your browser settings — in-app notifications still arrive.'
+          : permission === 'granted'
+            ? 'Exam reminders and new content arrive on this device.'
+            : 'Turning this on will ask your browser for permission.';
   const maxWeekly = Math.max(1, ...(progress.data?.weekly ?? []).map((d) => Math.round(d.seconds / 60)));
 
   return (
@@ -260,7 +311,7 @@ export default function ProfilePage({ initialTab = 'overview' }: { initialTab?: 
           <p className="mb-2 text-[13.5px] font-semibold">Notifications</p>
           <div className="space-y-2">
             {[
-              { key: 'push' as const, label: 'Push notifications', hint: 'Exam reminders and new content on this device.' },
+              { key: 'push' as const, label: 'Push notifications', hint: pushHint },
               { key: 'examReminders' as const, label: 'Exam reminders', hint: 'Reminders before scheduled tests.' },
               { key: 'newContent' as const, label: 'New lectures & papers', hint: 'When new content is published.' },
             ].map((item) => (
@@ -273,7 +324,11 @@ export default function ProfilePage({ initialTab = 'overview' }: { initialTab?: 
                   type="checkbox"
                   checked={prefs[item.key]}
                   disabled={savingPrefs}
-                  onChange={(event) => void savePrefs({ ...prefs, [item.key]: event.target.checked })}
+                  onChange={(event) =>
+                   item.key === 'push'
+                     ? void setPushEnabled(event.target.checked)
+                     : void savePrefs({ ...prefs, [item.key]: event.target.checked })
+                 }
                   className="mt-1 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500"
                 />
               </label>

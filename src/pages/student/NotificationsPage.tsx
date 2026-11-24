@@ -1,8 +1,10 @@
+import { useEffect } from 'react';
 import { Bell, BellOff } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useApiQuery } from '@/hooks/useApi';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 import { useAuth } from '@/context/AuthContext';
+import { useToast } from '@/context/ToastContext';
 import { Badge, EmptyState, ErrorState, Spinner } from '@/components/ui';
 import { formatRelative } from '@/lib/format';
 import type { Announcement } from '@shared/types';
@@ -10,10 +12,25 @@ import type { Announcement } from '@shared/types';
 export default function NotificationsPage() {
   useDocumentTitle('Notifications');
   const { status } = useAuth();
+  const toast = useToast();
   const { data, loading, error, refetch } = useApiQuery<{ items: Announcement[] }>('/api/notifications', undefined, {
     auth: true,
     enabled: status === 'authenticated',
   });
+
+  // A push that arrives while the app is in the foreground is surfaced by
+  // `src/lib/messaging.ts` as a DOM event — the service worker cannot show it.
+  // Refresh the feed and tell the student, rather than dropping the message.
+  useEffect(() => {
+    const onPush = (event: Event) => {
+      const detail = (event as CustomEvent<{ notification?: { title?: string; body?: string } }>).detail;
+      const title = detail?.notification?.title;
+      if (title) toast.info(title);
+      void refetch();
+    };
+    window.addEventListener('prepsetu:push', onPush);
+    return () => window.removeEventListener('prepsetu:push', onPush);
+  }, [refetch, toast]);
 
   return (
     <div className="container-app max-w-3xl space-y-4 py-4 sm:py-6">

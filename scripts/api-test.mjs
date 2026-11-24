@@ -148,6 +148,22 @@ async function main() {
   eq(studentOnAdmin.status, 403, 'admin API rejects students (403)');
 
   // ------------------------------------------------------------- catalogue --
+  group('Search hardening');
+  // SQLite rejects LIKE patterns past an internal size budget, so an
+  // unbounded ?q= used to 500 every search endpoint. Search terms are capped
+  // and escaped in worker/lib/util.ts likePattern().
+  const longTerm = 'a'.repeat(500);
+  for (const path of ['/api/search', '/api/courses', '/api/lectures', '/api/exams']) {
+    const long = await get(`${path}?q=${longTerm}`);
+    check(long.status === 200, `${path} survives a 500-character search term`, `got ${long.status}`);
+  }
+  for (const wildcard of ['%', '_', '\\\\']) {
+    const escaped = await get(`/api/search?q=${encodeURIComponent(wildcard.repeat(120))}`);
+    check(escaped.status === 200, `search escapes "${wildcard}" instead of treating it as a pattern`, `got ${escaped.status}`);
+  }
+  const normalTerm = await get('/api/search?q=JEE%20Advanced%202024%20Physics%20Paper%20One');
+  check(normalTerm.status === 200, 'a realistic long search term still works');
+
   group('Public catalogue');
   const home = await get('/api/home');
   eq(home.status, 200, 'GET /api/home');

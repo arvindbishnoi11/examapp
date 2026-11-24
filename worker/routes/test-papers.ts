@@ -9,6 +9,7 @@ import type { Router } from '../lib/router';
 import { forbidden, json, notFound, parsePage, paginated } from '../lib/http';
 import { optionalAuth, requireAuth } from '../services/session';
 import { cachedJson } from '../lib/cache';
+import { likePattern } from '../lib/util';
 import { clientIdentity, enforceRateLimit, RATE_LIMITS } from '../lib/rate-limit';
 
 export function registerTestPaperRoutes(router: Router): void {
@@ -32,7 +33,7 @@ export function registerTestPaperRoutes(router: Router): void {
     if (classId) add(classId, (i) => `tp.class_id = ?${i}`);
     if (year) add(Number(year), (i) => `tp.year = ?${i}`);
     if (category) add(category, (i) => `tp.category = ?${i}`);
-    if (q) add(`%${q.replace(/[\\%_]/g, (m) => '\\' + m)}%`, (i) => `tp.title LIKE ?${i} ESCAPE '\\'`);
+    if (q) add(likePattern(q), (i) => `tp.title LIKE ?${i} ESCAPE '\\'`);
 
     const producer = async () => {
       const whereSql = where.join(' AND ');

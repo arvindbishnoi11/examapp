@@ -4,7 +4,7 @@
 
 import type { Router } from '../../lib/router';
 import { json, parsePage, paginated } from '../../lib/http';
-import { toCsv } from '../../lib/util';
+import { likePattern, toCsv } from '../../lib/util';
 import { requirePermission } from '../../services/session';
 import { clientIdentity, enforceRateLimit, RATE_LIMITS } from '../../lib/rate-limit';
 
@@ -24,7 +24,7 @@ export function registerAdminAuditRoutes(router: Router): void {
       where.push(`action LIKE ?${binds.length}`);
     }
     if (actor) {
-      binds.push(`%${actor}%`);
+      binds.push(likePattern(actor));
       where.push(`(actor_email LIKE ?${binds.length} OR actor_id = ?${binds.length})`);
     }
     if (status && ['success', 'failure', 'denied'].includes(status)) {

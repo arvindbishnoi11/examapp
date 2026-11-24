@@ -17,7 +17,7 @@ import {
 import { requirePermission } from '../../services/session';
 import { writeAudit } from '../../lib/audit';
 import { invalidateAsync } from '../../lib/cache';
-import { newId, nowIso, parseJson } from '../../lib/util';
+import { likePattern, newId, nowIso, parseJson } from '../../lib/util';
 import { uniqueSlug } from '../../lib/slug';
 
 type Entity = 'classes' | 'exam_types' | 'courses' | 'subjects' | 'chapters';
@@ -63,7 +63,7 @@ async function listTaxonomy(ctx: RouteCtx, entity: Entity, extraWhere: string[],
   const where = [...extraWhere];
   const allBinds = [...binds];
   if (q) {
-    allBinds.push(`%${q.replace(/[\\%_]/g, (m) => '\\' + m)}%`);
+    allBinds.push(likePattern(q));
     where.push(`${entity}.name LIKE ?${allBinds.length} ESCAPE '\\'`);
   }
   const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
@@ -248,8 +248,8 @@ export function registerAdminCourseRoutes(router: Router): void {
     const where: string[] = [];
     const binds: unknown[] = [];
     if (q) {
-      binds.push(`%${q}%`);
-      where.push(`c.name LIKE ?${binds.length}`);
+      binds.push(likePattern(q));
+      where.push(`c.name LIKE ?${binds.length} ESCAPE '\\'`);
     }
     if (status && ['draft', 'published', 'archived'].includes(status)) {
       binds.push(status);

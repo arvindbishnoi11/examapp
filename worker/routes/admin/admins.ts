@@ -28,7 +28,7 @@ import { requireAnyPermission, requirePermission, requireSuperAdmin, requireAuth
 import { writeAudit } from '../../lib/audit';
 import { isPermissionKey, PERMISSION_KEYS, ROLE_LEVEL } from '../../../shared/permissions';
 import { clientIdentity, enforceRateLimit, RATE_LIMITS } from '../../lib/rate-limit';
-import { newId, nowIso } from '../../lib/util';
+import { likePattern, newId, nowIso } from '../../lib/util';
 
 const SUPER_ADMIN_ROLE_ID = 'role_super_admin';
 
@@ -389,7 +389,7 @@ export function registerAdminAdminRoutes(router: Router): void {
     const where = ["u.status = 'active'", 'NOT EXISTS (SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = u.id AND ur.is_active = 1 AND r.key != \'student\')'];
     const binds: unknown[] = [];
     if (q) {
-      binds.push(`%${q}%`);
+      binds.push(likePattern(q));
       where.push(`(u.email LIKE ?${binds.length} OR u.display_name LIKE ?${binds.length})`);
     }
     const rows = await ctx.env.DB.prepare(

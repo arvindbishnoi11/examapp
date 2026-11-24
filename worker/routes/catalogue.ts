@@ -11,6 +11,7 @@ import type { RouteCtx } from '../env';
 import type { Router } from '../lib/router';
 import { json, notFound, parsePage, paginated } from '../lib/http';
 import { cachedJson } from '../lib/cache';
+import { likePattern } from '../lib/util';
 import { optionalAuth } from '../services/session';
 
 const COURSE_SELECT = `
@@ -94,7 +95,7 @@ export function registerCatalogueRoutes(router: Router): void {
     if (featured) where.push('c.is_featured = 1');
     if (free) where.push('c.is_free = 1');
     if (q) {
-      binds.push(`%${q.replace(/[\\%_]/g, (m) => '\\' + m)}%`);
+      binds.push(likePattern(q));
       where.push(`(c.name LIKE ?${binds.length} ESCAPE '\\' OR c.description LIKE ?${binds.length} ESCAPE '\\' OR c.tags LIKE ?${binds.length} ESCAPE '\\')`);
     }
 
@@ -235,7 +236,7 @@ export function registerCatalogueRoutes(router: Router): void {
   router.get('/api/search', async (ctx) => {
     const q = (ctx.url.searchParams.get('q') ?? '').trim();
     if (q.length < 2) return json({ courses: [], lectures: [], exams: [], papers: [] });
-    const pattern = `%${q.replace(/[\\%_]/g, (m) => '\\' + m)}%`;
+    const pattern = likePattern(q);
 
     const [courses, lectures, exams, papers] = await ctx.env.DB.batch([
       ctx.env.DB.prepare(

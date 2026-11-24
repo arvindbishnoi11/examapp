@@ -17,7 +17,7 @@ import {
 import { requirePermission } from '../../services/session';
 import { clientIdentity, enforceRateLimit, RATE_LIMITS } from '../../lib/rate-limit';
 import { writeAudit } from '../../lib/audit';
-import { toCsv, nowIso, isoDaysAgo } from '../../lib/util';
+import { isoDaysAgo, likePattern, nowIso, toCsv } from '../../lib/util';
 
 async function assertNotStaffTarget(env: { DB: D1Database }, userId: string): Promise<void> {
   const staff = await env.DB.prepare(
@@ -43,7 +43,7 @@ export function registerAdminStudentRoutes(router: Router): void {
     const where: string[] = ["u.status != 'deleted'"];
     const binds: unknown[] = [];
     if (q) {
-      binds.push(`%${q.replace(/[\\%_]/g, (m) => '\\' + m)}%`);
+      binds.push(likePattern(q));
       where.push(`(u.email LIKE ?${binds.length} ESCAPE '\\' OR u.display_name LIKE ?${binds.length} ESCAPE '\\' OR p.full_name LIKE ?${binds.length} ESCAPE '\\')`);
     }
     if (status && ['active', 'suspended'].includes(status)) {

@@ -14,7 +14,7 @@ import { json, notFound, parsePage, paginated, readJson } from '../lib/http';
 import { cachedJson } from '../lib/cache';
 import { optionalAuth, requireAuth } from '../services/session';
 import { clientIdentity, enforceRateLimit, RATE_LIMITS } from '../lib/rate-limit';
-import { newId } from '../lib/util';
+import { likePattern, newId } from '../lib/util';
 
 function mapLecture(row: Record<string, unknown>) {
   return {
@@ -48,7 +48,7 @@ export function registerLectureRoutes(router: Router): void {
     if (subjectId) add(subjectId, (i) => `l.subject_id = ?${i}`);
     if (chapterId) add(chapterId, (i) => `l.chapter_id = ?${i}`);
     if (seriesId) add(seriesId, (i) => `l.series_id = ?${i}`);
-    if (q) add(`%${q.replace(/[\\%_]/g, (m) => '\\' + m)}%`, (i) => `(l.title LIKE ?${i} ESCAPE '\\' OR l.description LIKE ?${i} ESCAPE '\\')`);
+    if (q) add(likePattern(q), (i) => `(l.title LIKE ?${i} ESCAPE '\\' OR l.description LIKE ?${i} ESCAPE '\\')`);
 
     const orderBy =
       sort === 'popular' ? 'l.view_count DESC, l.created_at DESC' : sort === 'oldest' ? 'l.created_at ASC' : 'l.created_at DESC';

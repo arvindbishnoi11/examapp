@@ -222,5 +222,5 @@ production deployment. 144 automated assertions run on this path.
 | Attempts | One live attempt per exam per student | By design; resume instead |
 | CSV exports | Capped at 5 000–10 000 rows | Filter by exam, or page the API |
 | Cron | 15-minute granularity | `scheduledAt` notifications have ±15 min resolution |
-| Search | `LIKE`-based, no stemming | Adequate for the catalogue size; swap for FTS5 if needed |
+| Search | `LIKE`-based, no stemming, terms capped at ~38 characters | Adequate for the catalogue size; swap for FTS5 for real full-text |
 | i18n | UI copy is English only | Content language is per-lecture (`language` column) |

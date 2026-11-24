@@ -16,7 +16,7 @@ import {
 import { requirePermission } from '../../services/session';
 import { writeAudit } from '../../lib/audit';
 import { invalidateAsync } from '../../lib/cache';
-import { newId, nowIso, toCsv } from '../../lib/util';
+import { likePattern, newId, nowIso, toCsv } from '../../lib/util';
 import { ensureUniqueSlug } from '../../lib/slug';
 import { submitAttempt } from '../../services/exams';
 
@@ -138,7 +138,7 @@ export function registerAdminExamRoutes(router: Router): void {
     const where: string[] = [];
     const binds: unknown[] = [];
     if (q) {
-      binds.push(`%${q}%`);
+      binds.push(likePattern(q));
       where.push(`e.title LIKE ?${binds.length}`);
     }
     if (status) {
@@ -622,7 +622,7 @@ export function registerAdminExamRoutes(router: Router): void {
       where.push(`r.is_published = ?${binds.length}`);
     }
     if (q) {
-      binds.push(`%${q}%`);
+      binds.push(likePattern(q));
       where.push(`(u.email LIKE ?${binds.length} OR e.title LIKE ?${binds.length})`);
     }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';

@@ -240,9 +240,35 @@ export function chunk<T>(items: T[], size: number): T[][] {
   return out;
 }
 
-/** Escape a value for use inside a LIKE pattern. */
+/**
+ * SQLite refuses LIKE/GLOB patterns beyond an internal size budget
+ * ("LIKE or GLOB pattern too complex"). Measured against this Worker's SQLite
+ * build the budget is exactly 50 characters, and it applies to the *escaped*
+ * pattern including the two `%` wildcards — every `%`, `_` or `\` in the term
+ * costs two characters. A search box never needs more than a word or an exam
+ * name, so the pattern is capped at 40 (≈38 characters of a term such as
+ * `JEE Advanced 2024 Physics`) and longer input is silently trimmed instead of
+ * erroring.
+ */
+export const MAX_LIKE_PATTERN = 38;
+
+/**
+ * Build a `%term%` LIKE pattern from untrusted user input.
+ *
+ * Always use this instead of interpolating the term. It escapes `%`, `_` and
+ * `\` (so a student typing a wildcard cannot turn a search into a full scan)
+ * and then truncates the *escaped* string, which is what SQLite measures, so
+ * `%%%…` and `\\\…` cannot push the pattern over the limit either.
+ *
+ * Callers must keep the matching `ESCAPE '\\'` clause in their SQL; without it
+ * the backslashes are literal and the escaping achieves nothing.
+ */
 export function likePattern(value: string): string {
-  return `%${value.replace(/[\\%_]/g, (c) => '\\' + c)}%`;
+  const escaped = value.trim().replace(/[\\%_]/g, (c) => '\\' + c);
+  const capped = escaped.length > MAX_LIKE_PATTERN ? escaped.slice(0, MAX_LIKE_PATTERN) : escaped;
+  // A trailing lone backslash would escape the closing `%`, so drop it.
+  const safe = capped.endsWith('\\') ? capped.slice(0, -1) : capped;
+  return `%${safe}%`;
 }
 
 export function csvEscape(value: unknown): string {

@@ -39,7 +39,7 @@ import {
   type AnswerInput,
   type AttemptRow,
 } from '../services/exams';
-import { nowIso, parseJsonArray } from '../lib/util';
+import { likePattern, nowIso, parseJsonArray } from '../lib/util';
 import { writeAudit } from '../lib/audit';
 
 function publicExam(row: Record<string, unknown>) {
@@ -110,7 +110,7 @@ export function registerExamRoutes(router: Router): void {
       where.push(`e.subject_id = ?${binds.length}`);
     }
     if (q) {
-      binds.push(`%${q.replace(/[\\%_]/g, (m) => '\\' + m)}%`);
+      binds.push(likePattern(q));
       where.push(`e.title LIKE ?${binds.length} ESCAPE '\\'`);
     }
 

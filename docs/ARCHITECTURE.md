@@ -207,6 +207,7 @@ production deployment. 144 automated assertions run on this path.
 
 | Area | Limitation | Mitigation |
 | --- | --- | --- |
+| Papers | No in-app PDF file picker; papers are registered by URL | Upload in Firebase/R2 first, then paste the URL (see STORAGE.md) |
 | R2 media | `/api/media/*` is unlisted, not access-controlled | Use Firebase Storage token URLs for gated papers |
 | Sheets | Sandboxed environments cannot reach Google; unconfigured syncs report `failed` | Admin console is a full alternative |
 | Rankings | Cohort < 5 yields no rank | Documented and expected |

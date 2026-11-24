@@ -24,8 +24,13 @@ the UI can explain it. The provider actually used is detected per file and store
 
 ## Provider A — Firebase Storage (default)
 
-The browser uploads directly with the signed-in administrator's Firebase user; the Worker then registers the
-resulting URL. This keeps a 25 MB PDF off the Worker entirely.
+> **Current state:** the admin console registers a PDF by **URL** — it does not ship a file picker that talks
+> to Firebase Storage. Upload out-of-band (Firebase console, the `gsutil` command below, or your own script)
+> and paste the resulting download URL into **Admin → Test papers → Register paper**. This keeps a 25 MB PDF
+> off the Worker entirely.
+
+The intended end state is a browser upload performed with the signed-in administrator's Firebase user, after
+which the Worker registers the resulting URL.
 
 **1. Create the bucket.** In the Firebase console → Storage → Get started (the default bucket is
 `<project>.appspot.com`, newer projects use `<project>.firebasestorage.app`).

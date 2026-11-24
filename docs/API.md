@@ -217,6 +217,10 @@ Self-modification and any attempt to create a `super_admin` over HTTP are refuse
 | GET/PUT | `/api/admin/settings` | `settings.view` / `settings.manage` (+ super-admin-only keys) |
 | GET | `/api/admin/settings/integrations` | `settings.view` |
 
+`days` is clamped, never rejected: `overview` accepts 7–180 (default 30) and `students/active` accepts
+1–90 (default 7). Out-of-range or non-numeric values fall back to the boundary/default, so a typo never
+500s a dashboard.
+
 ---
 
 ## Examples

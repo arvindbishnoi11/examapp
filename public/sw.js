@@ -8,10 +8,13 @@
  * src/lib/offlineQueue.ts), which is per-user and cleared on sign-out.
  * ============================================================================= */
 
-const VERSION = 'prepsetu-v3';
+const VERSION = 'prepsetu-v4';
 const SHELL_CACHE = `${VERSION}-shell`;
 const STATIC_CACHE = `${VERSION}-static`;
-const OFFLINE_URL = '/offline.html';
+// The asset layer redirects `/offline.html` → `/offline` (auto-trailing-slash
+// HTML handling). Precache the canonical URL so `cache.addAll` never stores a
+// redirected response, which would reject the whole install step.
+const OFFLINE_URL = '/offline';
 
 const PRECACHE = [OFFLINE_URL, '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png'];
 

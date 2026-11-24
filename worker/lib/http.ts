@@ -301,7 +301,15 @@ export function resolveCors(request: Request, env: Env): Record<string, string> 
   };
 }
 
-export function withSecurityHeaders(response: Response): Response {
+/**
+ * Security headers for every response the Worker controls.
+ *
+ * `frameAncestors` defaults to `'self'`, which is what production wants. Local
+ * preview environments proxy the app under a different origin, so development
+ * opts into the proxy host pattern instead — otherwise the preview would be
+ * blanked by our own clickjacking defence. Production never gets the exception.
+ */
+export function withSecurityHeaders(response: Response, frameAncestors: string = "'self'"): Response {
   const headers = new Headers(response.headers);
   headers.set('X-Content-Type-Options', 'nosniff');
   headers.set('X-Frame-Options', 'SAMEORIGIN');
@@ -323,8 +331,8 @@ export function withSecurityHeaders(response: Response): Response {
       "object-src 'none'",
       "base-uri 'self'",
       "form-action 'self'",
-      'frame-ancestors ',
-    ].join('; ').replace(/frame-ancestors $/, "frame-ancestors 'self'"),
+      `frame-ancestors ${frameAncestors}`,
+    ].join('; '),
   );
   headers.set('Strict-Transport-Security', 'max-age=31536000; includeSubDomains');
   return new Response(response.body, { status: response.status, statusText: response.statusText, headers });

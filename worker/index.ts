@@ -49,6 +49,29 @@ function requestId(): string {
   return crypto.randomUUID();
 }
 
+/**
+ * Local preview harnesses serve the app through a proxy on a different origin,
+ * so `frame-ancestors 'self'` would blank the preview in its iframe. The
+ * exception is scoped to development; production always uses `'self'`.
+ * `X-Frame-Options` is omitted in development for the same reason (it has no
+ * wildcard form and would win over the CSP in browsers that still honour it).
+ */
+function frameAncestorsFor(env: Env): { csp: string; setXfo: boolean } {
+  const isProduction = (env.APP_ENV ?? 'development') === 'production';
+  return isProduction
+    ? { csp: "'self'", setXfo: true }
+    : { csp: "'self' https: http://localhost:5173 http://127.0.0.1:5173", setXfo: false };
+}
+
+function withDeveloperFriendlyHeaders(response: Response, env: Env): Response {
+  const { csp, setXfo } = frameAncestorsFor(env);
+  const secured = withSecurityHeaders(response, csp);
+  if (setXfo) return secured;
+  const headers = new Headers(secured.headers);
+  headers.delete('x-frame-options');
+  return new Response(secured.body, { status: secured.status, statusText: secured.statusText, headers });
+}
+
 async function handleApi(request: Request, env: Env, ctx: ExecutionContext, url: URL): Promise<Response> {
   const id = requestId();
   const cors = resolveCors(request, env);
@@ -196,7 +219,7 @@ export default {
       url.pathname.endsWith('/index.html') ||
       (!url.pathname.includes('.') && !url.pathname.startsWith('/assets/'));
     if (isDocument) {
-      return withSecurityHeaders(response);
+      return withDeveloperFriendlyHeaders(response, env);
     }
     const h = new Headers(response.headers);
     h.set('X-Content-Type-Options', 'nosniff');

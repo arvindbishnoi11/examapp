@@ -94,6 +94,34 @@ function firstId(list) {
 async function main() {
   console.log(`PrepSetu API smoke test → ${BASE}\n`);
 
+  group('Document security headers');
+  // Documents are served by the asset layer, so the Worker must own the
+  // headers: Workers static assets have no header configuration of their own.
+  for (const page of ['/', '/courses', '/tests']) {
+    const document = await get(page, { raw: true });
+    check(document.status === 200, `document ${page} is served`, `got ${document.status}`);
+    check(Boolean(document.headers?.get('content-security-policy')), `document ${page} carries a CSP`);
+    check(document.headers?.get('x-content-type-options') === 'nosniff', `document ${page} sets nosniff`);
+
+    // Clickjacking defence is environment-aware: production must be strict,
+    // while development allows the preview proxy to frame the app (otherwise
+    // the local preview is blanked by our own headers).
+    const ancestors = document.headers?.get('content-security-policy')?.match(/frame-ancestors ([^;]+)/)?.[1]?.trim() ?? '';
+    check(ancestors.length > 0, `document ${page} declares frame-ancestors`, `got "${ancestors}"`);
+    // Auto-detect: dev-auth being enabled means we are in development.
+    const isProduction = process.env.EXPECT_ENV === 'production';
+    if (isProduction) {
+      check(ancestors === "'self'", `document ${page} is framable only by itself in production`, `got "${ancestors}"`);
+      check(document.headers?.get('x-frame-options') === 'SAMEORIGIN', `document ${page} sends X-Frame-Options in production`);
+    } else {
+      check(ancestors.includes("'self'"), `document ${page} still restricts framing to self (plus dev preview hosts)`);
+    }
+  }
+  const asset = await get('/manifest.webmanifest', { raw: true });
+  check(asset.status === 200, 'static assets are still served');
+
+
+
   // ---------------------------------------------------------------- health --
   group('Health & bootstrap');
   const health = await get('/healthz');
@@ -107,18 +135,6 @@ async function main() {
 
   const security = await get('/api/auth/config');
   check(Boolean(security.headers?.get('x-request-id')), 'API responses carry X-Request-Id');
-
-  // Documents are served by the asset layer, so the Worker must own the
-  // headers: Workers static assets have no header configuration of their own.
-  for (const page of ['/', '/courses', '/tests']) {
-    const document = await get(page, { raw: true });
-    check(document.status === 200, `document ${page} is served`, `got ${document.status}`);
-    check(Boolean(document.headers?.get('content-security-policy')), `document ${page} carries a CSP`);
-    check(document.headers?.get('x-frame-options') === 'SAMEORIGIN', `document ${page} cannot be framed by another site`);
-    check(document.headers?.get('x-content-type-options') === 'nosniff', `document ${page} sets nosniff`);
-  }
-  const asset = await get('/manifest.webmanifest', { raw: true });
-  check(asset.status === 200, 'static assets are still served');
 
   const config = security;
   eq(config.status, 200, 'GET /api/auth/config');

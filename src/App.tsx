@@ -45,6 +45,7 @@ const AdminExamBuilderPage = lazy(() => import('@/pages/admin/ExamBuilderPage'))
 const AdminQuestionsPage = lazy(() => import('@/pages/admin/QuestionsPage'));
 const AdminPapersPage = lazy(() => import('@/pages/admin/PapersPage'));
 const AdminResultsPage = lazy(() => import('@/pages/admin/ResultsPage'));
+const AdminAttemptsPage = lazy(() => import('@/pages/admin/AttemptsPage'));
 const AdminNotificationsPage = lazy(() => import('@/pages/admin/NotificationsPage'));
 const AdminAnnouncementsPage = lazy(() => import('@/pages/admin/AnnouncementsPage'));
 const AdminSheetsPage = lazy(() => import('@/pages/admin/SheetsPage'));
@@ -155,6 +156,7 @@ export function App() {
           <Route path="questions" element={<RequirePermission permission="questions.view"><AdminQuestionsPage /></RequirePermission>} />
           <Route path="papers" element={<RequirePermission permission="test_papers.manage"><AdminPapersPage /></RequirePermission>} />
           <Route path="results" element={<RequirePermission permission="results.view"><AdminResultsPage /></RequirePermission>} />
+          <Route path="attempts" element={<RequirePermission permission="results.view"><AdminAttemptsPage /></RequirePermission>} />
           <Route path="notifications" element={<RequirePermission permission="notifications.manage"><AdminNotificationsPage /></RequirePermission>} />
           <Route path="announcements" element={<RequirePermission permission="announcements.manage"><AdminAnnouncementsPage /></RequirePermission>} />
           <Route path="sheets" element={<RequirePermission permission="sheets.view"><AdminSheetsPage /></RequirePermission>} />

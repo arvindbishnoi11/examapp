@@ -724,15 +724,22 @@ export function registerAdminExamRoutes(router: Router): void {
       where.push(`a.exam_id = ?${binds.length}`);
     }
     const whereSql = where.length ? `WHERE ${where.join(' AND ')}` : '';
-    const rows = await ctx.env.DB.prepare(
-      `SELECT a.id, a.exam_id AS examId, e.title AS examTitle, u.email AS studentEmail, a.status, a.started_at AS startedAt,
-              a.submitted_at AS submittedAt, a.score, a.percentage, a.expires_at_ms AS expiresAtMs
-         FROM exam_attempts a JOIN exams e ON e.id = a.exam_id JOIN users u ON u.id = a.user_id
-         ${whereSql} ORDER BY a.created_at DESC LIMIT ?${binds.length + 1} OFFSET ?${binds.length + 2}`,
-    )
-      .bind(...binds, page.pageSize, page.offset)
-      .all<Record<string, unknown>>();
-    return json({ items: rows.results ?? [] });
+    const [rows, count] = await Promise.all([
+      ctx.env.DB.prepare(
+        `SELECT a.id, a.exam_id AS examId, e.title AS examTitle, u.email AS studentEmail, a.status, a.started_at AS startedAt,
+                a.submitted_at AS submittedAt, a.score, a.percentage, a.expires_at_ms AS expiresAtMs,
+                a.time_spent_seconds AS timeSpentSeconds, a.answered_count AS answeredCount,
+                a.total_questions AS totalQuestions, a.submit_channel AS submitChannel
+           FROM exam_attempts a JOIN exams e ON e.id = a.exam_id JOIN users u ON u.id = a.user_id
+           ${whereSql} ORDER BY a.created_at DESC LIMIT ?${binds.length + 1} OFFSET ?${binds.length + 2}`,
+      )
+        .bind(...binds, page.pageSize, page.offset)
+        .all<Record<string, unknown>>(),
+      ctx.env.DB.prepare(`SELECT COUNT(*) AS n FROM exam_attempts a ${whereSql}`)
+        .bind(...binds)
+        .first<{ n: number }>(),
+    ]);
+    return json(paginated(rows.results ?? [], Number(count?.n ?? 0), page));
   });
 
   router.get('/api/admin/results/export', async (ctx) => {

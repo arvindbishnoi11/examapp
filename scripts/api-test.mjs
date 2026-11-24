@@ -400,6 +400,35 @@ async function main() {
 
     const history = await get('/api/student/dashboard', { token: studentToken });
     eq(history.status, 200, 'GET /api/student/dashboard');
+
+    // Admin attempt monitoring backs the "stuck attempt" runbook.
+    const adminAttempts = await get('/api/admin/attempts?pageSize=5', { token: adminToken });
+    eq(adminAttempts.status, 200, 'GET /api/admin/attempts');
+    check(Array.isArray(adminAttempts.data?.items), 'attempt monitoring lists rows');
+    for (const key of ['page', 'pageSize', 'total', 'totalPages']) {
+      check(adminAttempts.data?.[key] !== undefined, `attempt monitoring is paginated (has "${key}")`);
+    }
+    if (adminAttempts.data?.items?.[0]) {
+      const row = adminAttempts.data.items[0];
+      check(typeof row.examTitle === 'string' && typeof row.studentEmail === 'string', 'attempt rows name the exam and student');
+    }
+
+    const filteredAttempts = await get('/api/admin/attempts?status=evaluated&pageSize=1', { token: adminToken });
+    eq(filteredAttempts.status, 200, 'GET /api/admin/attempts?status= filters');
+    check(
+      (filteredAttempts.data?.items ?? []).every((row) => row.status === 'evaluated'),
+      'status filter is honoured',
+    );
+
+    // Force-submitting is the operator escape hatch for a stuck attempt.
+    const stuck = await get('/api/admin/attempts?status=submitted&pageSize=1', { token: adminToken });
+    const stuckRow = stuck.data?.items?.[0];
+    if (stuckRow) {
+      const force = await post(`/api/admin/attempts/${stuckRow.id}/submit`, {}, { token: adminToken });
+      // Already submitted → the engine rejects it; a live attempt → it submits.
+      check([200, 400, 409, 422].includes(force.status), 'force submit answers with a defined outcome', `got ${force.status}`);
+      check(force.status !== 500, 'force submit never crashes on an already-submitted attempt');
+    }
   } else {
     const maybeResult = await get('/api/results/00000000-0000-4000-8000-000000000000', { token: studentToken });
     check([400, 404].includes(maybeResult.status), 'unknown result id fails cleanly', `got ${maybeResult.status}`);

@@ -45,15 +45,17 @@ npx wrangler d1 execute prepsetu --remote --command \
   "SELECT id, exam_id, user_id, expires_at_ms FROM exam_attempts WHERE status='in_progress' ORDER BY started_at_ms LIMIT 20"
 ```
 
-The cron closes anything past `expires_at_ms + 45s` automatically. If you cannot wait, force-submit from the
-admin API:
+The cron closes anything past `expires_at_ms + 45s` automatically. If you cannot wait, use
+**Admin → Exam Attempts**, filter to *In progress*, and press **Force submit** on the row. The same thing from
+the API:
 
 ```bash
 curl -X POST https://<host>/api/admin/attempts/<attemptId>/submit \
   -H "authorization: Bearer <admin-token>"
 ```
 
-This evaluates and stores the result exactly as a normal submission would, and is audit-logged.
+This evaluates and stores the result exactly as a normal submission would, and is audit-logged
+(`attempt.force_submit`). Rows past their deadline are flagged in the list so you can spot a stalled cron.
 
 ### Purge stale caches
 

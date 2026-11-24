@@ -185,8 +185,8 @@ Self-modification and any attempt to create a `super_admin` over HTTP are refuse
 | POST | `/api/admin/exams/:id/questions` | `exams.manage` — `{ questionIds[], sectionId? }` |
 | PUT | `/api/admin/exam-questions/:id` | `exams.manage` — marks, order, section |
 | DELETE | `/api/admin/exams/:examId/questions/:questionId` | `exams.manage` |
-| GET | `/api/admin/attempts` | `results.view` |
-| POST | `/api/admin/attempts/:id/submit` | `results.view` — force submit |
+| GET | `/api/admin/attempts?status=&examId=` | `results.view` — paginated attempt monitor (UI: Exam Attempts) |
+| POST | `/api/admin/attempts/:id/submit` | `results.view` — force submit; same evaluation as a student submit |
 | CRUD | `/api/admin/questions` (+ `/:id`, `/bulk-status`) | `questions.view` / `questions.manage` |
 
 ## Admin — results, papers, communication

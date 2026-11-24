@@ -1,32 +1,6 @@
 import { Suspense, useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom';
-import {
-  Activity,
-  BarChart3,
-  Bell,
-  BookOpen,
-  ChevronDown,
-  ClipboardList,
-  FileQuestion,
-  FileText,
-  GraduationCap,
-  Home,
-  Layers,
-  LayoutDashboard,
-  ListChecks,
-  LogOut,
-  Megaphone,
-  Menu,
-  Moon,
-  ScrollText,
-  Settings,
-  ShieldCheck,
-  Sun,
-  Table2,
-  Users,
-  Video,
-  X,
-} from 'lucide-react';
+import { Activity, BarChart3, Bell, BookOpen, ChevronDown, ClipboardList, FileQuestion, FileText, GraduationCap, Home, Layers, LayoutDashboard, ListChecks, LogOut, Megaphone, Menu, Moon, ScrollText, Settings, ShieldCheck, Sun, Table2, Timer, Users, Video, X } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import { Spinner } from '@/components/ui';
@@ -65,6 +39,7 @@ const GROUPS: { title: string; items: NavItem[] }[] = [
       { to: '/admin/exams', label: 'Examination Manager', icon: FileText, permission: 'exams.view' },
       { to: '/admin/questions', label: 'Question Bank', icon: FileQuestion, permission: 'questions.view' },
       { to: '/admin/results', label: 'Results', icon: GraduationCap, permission: 'results.view' },
+      { to: '/admin/attempts', label: 'Exam Attempts', icon: Timer, permission: 'results.view' },
       { to: '/admin/papers', label: 'Test Paper Manager', icon: FileText, permission: 'test_papers.manage' },
     ],
   },

@@ -29,7 +29,7 @@ export function CardHeader({ title, subtitle, action, className = '' }: { title:
 }
 
 // ---- Badge ------------------------------------------------------------------
-type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral';
+export type Tone = 'brand' | 'success' | 'warning' | 'danger' | 'neutral';
 const TONES: Record<Tone, string> = {
   brand: 'bg-brand-50 text-brand-700 dark:bg-brand-950/60 dark:text-brand-300',
   success: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300',

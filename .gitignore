@@ -1,0 +1,45 @@
+# dependencies
+node_modules/
+.pnp/
+.pnp.js
+
+# build output
+dist/
+.vite/
+*.local
+
+# secrets — NEVER commit these
+.env
+.env.*
+!.env.example
+.dev.vars
+.dev.vars.*
+!.dev.vars.example
+*.pem
+*.p8
+*.key
+service-account*.json
+firebase-admin*.json
+secrets/
+.wrangler/
+
+# logs / OS
+logs/
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# editor
+.idea/
+.vscode/*
+!.vscode/extensions.json
+
+# database dumps (never commit content backups)
+/backup-*.sql
+
+# test artefacts
+coverage/
+test-results/
+playwright-report/
+scripts/.tmp/

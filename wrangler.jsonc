@@ -1,0 +1,50 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "prepsetu",
+  "main": "worker/index.ts",
+  "compatibility_date": "2025-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "workers_dev": true,
+  "observability": { "enabled": true },
+
+  // The Worker serves BOTH the API and the compiled PWA from `dist/`.
+  // This mirrors Cloudflare Pages + Functions routing (see docs/DEPLOYMENT.md).
+  "assets": {
+    "directory": "./dist",
+    "binding": "ASSETS",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*", "/healthz"]
+  },
+
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "prepsetu",
+      "database_id": "34e2c8a5-5f0f-4c0e-9e8e-000000000000",
+      "migrations_dir": "migrations"
+    }
+  ],
+
+  // Optional R2 bucket for large test-paper PDFs when Firebase Storage is not used.
+  // Create with: npx wrangler r2 bucket create prepsetu-media
+  // Then uncomment this binding and set PLATFORM_SETTINGS storage provider to "r2".
+  // "r2_buckets": [{ "binding": "MEDIA", "bucket_name": "prepsetu-media" }],
+
+  "vars": {
+    "APP_NAME": "PrepSetu",
+    "APP_ENV": "production",
+    "FIREBASE_PROJECT_ID": "rankup29",
+    "SUPER_ADMIN_EMAIL": "arvindbishnoi@gmail.com",
+    "GOOGLE_SHEETS_SPREADSHEET_ID": "1tNqp66KgAnnhCRceOPkZubl1C-pMK_olzJkBlKGEnE4",
+    "ALLOWED_ORIGINS": "",
+    "DEFAULT_CACHE_TTL": "60"
+  },
+
+  "triggers": {
+    // Scheduled incremental content synchronisation from Google Sheets (every 15 min).
+    // Configure Sheets access first; the job no-ops safely when credentials are absent.
+    "crons": ["*/15 * * * *"]
+  },
+
+  "limits": { "cpu_ms": 50 }
+}

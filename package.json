@@ -1,0 +1,48 @@
+{
+  "name": "prepsetu",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "PrepSetu \u2014 secure, scalable Indian education platform (Class 11, Class 12, JEE, NEET) with a Cloudflare Worker + D1 backend and a React PWA frontend.",
+  "scripts": {
+    "dev": "npm run build:config && npm run icons && vite build && wrangler dev",
+    "dev:strict": "npm run build:config && npm run icons && vite build && wrangler dev --local --port 8799",
+    "dev:ui": "vite",
+    "build": "npm run build:config && npm run icons && vite build",
+    "build:config": "node scripts/build-config.mjs",
+    "preview": "npm run build && wrangler dev",
+    "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.worker.json --noEmit",
+    "typecheck:worker": "tsc -p tsconfig.worker.json --noEmit",
+    "test:api": "node scripts/api-test.mjs",
+    "test:e2e": "node scripts/e2e.mjs",
+    "db:migrate:local": "wrangler d1 migrations apply prepsetu --local",
+    "db:migrate:remote": "wrangler d1 migrations apply prepsetu --remote",
+    "db:seed:local": "wrangler d1 execute prepsetu --local --file=./scripts/seed-local.sql",
+    "deploy": "npm run build && wrangler deploy",
+    "icons": "node scripts/gen-icons.mjs",
+    "lint:secrets": "node scripts/check-secrets.mjs",
+    "verify": "npm run typecheck && npm run lint:secrets && npm run build",
+    "test": "npm run typecheck && npm run lint:secrets",
+    "dev:local": "npm run dev"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^5.62.7",
+    "firebase": "^11.1.0",
+    "lucide-react": "^1.79.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.28.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261124.1",
+    "@types/react": "^18.3.17",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.5",
+    "wrangler": "^4.16.0"
+  }
+}

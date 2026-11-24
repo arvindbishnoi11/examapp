@@ -1,0 +1,41 @@
+# =============================================================================
+# Copy this file to `.dev.vars` (git-ignored) for local Worker development.
+# `.dev.vars` is NEVER deployed and NEVER committed.
+#
+# For production use `wrangler secret put <NAME>` for every value below except
+# APP_ENV, which is a plain var in wrangler.jsonc.
+# =============================================================================
+
+# Local development mode. MUST be "development" (or unset) locally and
+# "production" in wrangler.jsonc. DEV_AUTH_ENABLED is ignored in production.
+APP_ENV=development
+
+# Development-only sign-in (no Firebase needed). Requires ALL THREE:
+#   DEV_AUTH_ENABLED=true, APP_ENV != production, FIREBASE_SERVICE_ACCOUNT_JSON empty
+DEV_AUTH_ENABLED=true
+
+# Firebase project + Admin SDK REST credentials.
+# For local development you can use an OAuth refresh-token credential ("authorized_user")
+# instead of a service account private key:
+#   gcloud auth application-default login   # or create an OAuth client for "Desktop app"
+#   -> {"type":"authorized_user","client_id":"...","client_secret":"...","refresh_token":"...","project_id":"rankup29"}
+FIREBASE_PROJECT_ID=rankup29
+FIREBASE_SERVICE_ACCOUNT_JSON=
+
+# Used only if FIREBASE_SERVICE_ACCOUNT_JSON is empty (dev / offline mode).
+# Generate with: node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+ADMIN_SESSION_SECRET=
+IP_HASH_SECRET=dev-only-salt-change-me
+
+# First super admin (the mailbox that will be promoted automatically server-side)
+SUPER_ADMIN_EMAIL=arvindbishnoi@gmail.com
+
+# Google Sheets content source
+GOOGLE_SHEETS_SPREADSHEET_ID=1tNqp66KgAnnhCRceOPkZubl1C-pMK_olzJkBlKGEnE4
+GOOGLE_SERVICE_ACCOUNT_JSON=
+
+# YouTube Data API v3
+YOUTUBE_API_KEY=
+
+# CORS allow-list (comma separated). Empty = same-origin only.
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173

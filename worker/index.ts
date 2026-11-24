@@ -186,8 +186,16 @@ export default {
       headers,
     });
 
-    // Security headers apply to documents; API handled above.
-    if (url.pathname.endsWith('/') || url.pathname === '/index.html' || !url.pathname.includes('.')) {
+    // Security headers apply to every document. `run_worker_first: ["/*"]`
+    // in wrangler.jsonc ensures this code actually runs for navigations —
+    // Workers static assets have no header-configuration option (there is no
+    // `_headers` equivalent, unlike Pages), so the Worker is the only place
+    // that can add them.
+    const isDocument =
+      url.pathname.endsWith('/') ||
+      url.pathname.endsWith('/index.html') ||
+      (!url.pathname.includes('.') && !url.pathname.startsWith('/assets/'));
+    if (isDocument) {
       return withSecurityHeaders(response);
     }
     const h = new Headers(response.headers);

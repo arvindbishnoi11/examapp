@@ -118,6 +118,8 @@ the API client asks for a fresh ID token on every request. In development the HM
   last super admin — enforced server-side.
 - **Security headers** (`withSecurityHeaders`): CSP, `X-Content-Type-Options`, `Referrer-Policy`,
   `X-Frame-Options`, `Permissions-Policy`; API responses also carry `X-Request-Id` for support.
+  These apply to HTML documents too, which requires `run_worker_first: ["/*"]` — a narrower value lets the
+  asset layer answer navigations and the pages ship unprotected.
 
 ## Troubleshooting
 

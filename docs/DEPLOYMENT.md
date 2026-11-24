@@ -80,8 +80,12 @@ npm run deploy     # build again + wrangler deploy
 ```
 
 `wrangler.jsonc` serves `./dist` with `not_found_handling: "single-page-application"` and
-`run_worker_first: ["/api/*", "/healthz"]` — so API calls and the health probe reach the Worker while any other
-path falls back to `index.html` for client-side routing.
+`run_worker_first: ["/*"]` — every request enters the Worker, which answers `/api/*` itself and delegates the
+rest to `ASSETS.fetch` (which supplies the `index.html` fallback for client-side routes).
+
+Routing everything through the Worker is deliberate: **Workers static assets have no header configuration**
+(no `_headers` equivalent, unlike Pages), so the only way an HTML page gets a CSP, `X-Frame-Options` or HSTS
+is for the Worker to add them. See [ARCHITECTURE.md](./ARCHITECTURE.md#layers).
 
 First deploy on `*.workers.dev`:
 
@@ -214,7 +218,8 @@ in a bare image.
 
 | Symptom | Cause | Fix |
 | --- | --- | --- |
-| `/healthz` returns HTML | `run_worker_first` missing `/healthz` | Keep `["/api/*", "/healthz"]` in `wrangler.jsonc` |
+| `/healthz` returns HTML | `run_worker_first` not set to `["/*"]` | Restore `run_worker_first: ["/*"]` in `wrangler.jsonc` |
+| Pages have no CSP / can be framed | `run_worker_first` narrowed to `/api/*` | Restore `["/*"]`; `npm run test:api` asserts the headers |
 | `no such table` | migrations not applied to that database | `npm run db:migrate:remote` |
 | 500 on every API call | `FIREBASE_PROJECT_ID`/secret mismatch | `npx wrangler tail` for the logged error |
 | Sign-in works, API 401 | Admin SDK credential absent/enableable | Re-put `FIREBASE_SERVICE_ACCOUNT_JSON` |

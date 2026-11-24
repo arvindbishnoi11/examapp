@@ -108,6 +108,18 @@ async function main() {
   const security = await get('/api/auth/config');
   check(Boolean(security.headers?.get('x-request-id')), 'API responses carry X-Request-Id');
 
+  // Documents are served by the asset layer, so the Worker must own the
+  // headers: Workers static assets have no header configuration of their own.
+  for (const page of ['/', '/courses', '/tests']) {
+    const document = await get(page, { raw: true });
+    check(document.status === 200, `document ${page} is served`, `got ${document.status}`);
+    check(Boolean(document.headers?.get('content-security-policy')), `document ${page} carries a CSP`);
+    check(document.headers?.get('x-frame-options') === 'SAMEORIGIN', `document ${page} cannot be framed by another site`);
+    check(document.headers?.get('x-content-type-options') === 'nosniff', `document ${page} sets nosniff`);
+  }
+  const asset = await get('/manifest.webmanifest', { raw: true });
+  check(asset.status === 200, 'static assets are still served');
+
   const config = security;
   eq(config.status, 200, 'GET /api/auth/config');
   check(typeof config.data?.siteName === 'string' && config.data.siteName.length > 0, 'site name configured');

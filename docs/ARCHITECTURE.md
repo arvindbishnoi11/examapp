@@ -12,7 +12,7 @@ get wrong.
 GET /api/courses
       │
       ▼
-assets layer ──► run_worker_first matches /api/* ──► Worker.fetch
+run_worker_first "/*" ──► Worker.fetch (every request)
                                                       │
                           ┌───────────────────────────┴────────────────────────────┐
                           ▼                                                        ▼
@@ -21,14 +21,22 @@ assets layer ──► run_worker_first matches /api/* ──► Worker.fetch
                     • router.match(method, path)
                     • handler(ctx) ──► services ──► D1
                     • CORS + X-Request-Id + security headers
+                    • documents: CSP, XFO, HSTS, Referrer-Policy
 ```
 
-Anything that is not `/api/*` or `/healthz` falls through to the static asset layer, which serves `dist/` and
-falls back to `index.html` so client-side routes deep-link correctly. Hashed assets get
-`cache-control: immutable`; `index.html`, `sw.js` and the messaging service worker get `no-cache`.
+Anything that is not `/api/*` or `/healthz` is delegated to `ASSETS.fetch`, which serves `dist/` and falls back
+to `index.html` so client-side routes deep-link correctly. Hashed assets get `cache-control: immutable`;
+`index.html`, `sw.js` and the messaging service worker get `no-cache`.
 
-**`/healthz` must be listed in `run_worker_first`.** Without it the asset layer answers with the SPA shell and
-every uptime monitor reports a false “OK”. This is asserted by the smoke test.
+**`run_worker_first` is `["/*"]`, and that matters for security.** Workers static assets can only be configured
+with `directory`, `binding`, `html_handling`, `not_found_handling`, `base_path` and `run_worker_first` — there
+is no header option. With a narrower `run_worker_first`, the asset layer answers navigations before the Worker
+runs, so `withSecurityHeaders` never executes and every page ships **without** a CSP, `X-Frame-Options`, HSTS
+or `Referrer-Policy`. Routing everything through the Worker keeps the health probe honest *and* the documents
+protected; the smoke test asserts both.
+
+The cost is that static assets traverse the Worker, which is why they are so cheap here: the Worker only copies
+`ASSETS.fetch`'s response and adjusts cache headers, and hashed filenames mean the edge cache absorbs the load.
 
 ---
 
